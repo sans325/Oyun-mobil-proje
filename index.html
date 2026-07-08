@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐦 Flappy Bird - Web Oyunu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        h1 {
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        #gameCanvas {
+            border: 5px solid white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(to bottom, #87ceeb 0%, #87ceeb 70%, #90EE90 70%, #90EE90 100%);
+            cursor: pointer;
+        }
+
+        .info {
+            color: white;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px 30px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .controls {
+            color: white;
+            text-align: center;
+            font-size: 1.1em;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px 30px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .controls p {
+            margin: 8px 0;
+        }
+
+        .key {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        #bestScore {
+            font-size: 1.2em;
+            color: #FFD700;
+            font-weight: bold;
+        }
+
+        .menu-screen, .gameover-screen, .paused-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .menu-screen.hidden, .gameover-screen.hidden, .paused-screen.hidden {
+            display: none;
+        }
+
+        .screen-content {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 50px 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .screen-content h2 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .screen-content .score {
+            font-size: 2em;
+            color: #FFD700;
+            margin: 20px 0;
+        }
+
+        .screen-content .best {
+            font-size: 1.2em;
+            color: #666;
+            margin: 10px 0 30px 0;
+        }
+
+        .screen-content p {
+            font-size: 1.2em;
+            color: #555;
+            margin: 15px 0;
+        }
+
+        .screen-content .instruction {
+            font-size: 1em;
+            color: #999;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2em;
+            }
+            
+            #gameCanvas {
+                max-width: 90vw;
+                height: auto;
+            }
+
+            .screen-content {
+                padding: 30px 20px;
+            }
+
+            .screen-content h2 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐦 Flappy Bird</h1>
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div class="info">
+            <div>Puan: <span id="score">0</span></div>
+            <div id="bestScore">En Yüksek: 0</div>
+        </div>
+        <div class="controls">
+            <p><span class="key">SPACE</span> veya <span class="key">TIKLAMA</span> - Zıpla</p>
+            <p><span class="key">P</span> - Duraklat/Devam Et</p>
+        </div>
+    </div>
+
+    <!-- Menü Ekranı -->
+    <div class="menu-screen" id="menuScreen">
+        <div class="screen-content">
+            <h2>🐦 FLAPPY BIRD</h2>
+            <p id="menuBest" class="best"></p>
+            <p style="color: #999; font-size: 1em;">Engelleri atla ve yüksek puan kazanmaya çalış!</p>
+            <p class="instruction">Başlamak için tıkla veya SPACE tuşuna bas</p>
+        </div>
+    </div>
+
+    <!-- Oyun Bitti Ekranı -->
+    <div class="gameover-screen hidden" id="gameoverScreen">
+        <div class="screen-content">
+            <h2>OYUN BİTTİ</h2>
+            <div class="score" id="finalScore">Puan: 0</div>
+            <div class="best" id="finalBest">En Yüksek: 0</div>
+            <p class="instruction">Tekrar denemek için tıkla veya SPACE tuşuna bas</p>
+        </div>
+    </div>
+
+    <!-- Duraklat Ekranı -->
+    <div class="paused-screen hidden" id="pausedScreen">
+        <div class="screen-content">
+            <h2>DURAKLANDI</h2>
+            <p class="instruction">Devam etmek için P tuşuna bas</p>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
