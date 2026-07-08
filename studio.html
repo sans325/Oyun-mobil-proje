@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐦 Flappy Bird - AI Studio Tarzı Editör</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            background: #1e1e1e;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .code-section {
+            flex: 1;
+            background: #252526;
+            border-radius: 10px;
+            padding: 20px;
+            overflow-y: auto;
+            border: 1px solid #3e3e42;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .preview-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .preview-header {
+            color: #cccccc;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .preview-container {
+            background: #252526;
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+            border: 1px solid #3e3e42;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            border: 3px solid #007acc;
+            border-radius: 5px;
+            background: linear-gradient(to bottom, #87ceeb 0%, #87ceeb 70%, #90EE90 70%, #90EE90 100%);
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 122, 204, 0.5);
+        }
+
+        .info-panel {
+            background: #252526;
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid #3e3e42;
+            color: #cccccc;
+            font-size: 13px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px;
+            background: #1e1e1e;
+            padding: 8px 12px;
+            border-radius: 5px;
+        }
+
+        .info-label {
+            color: #969696;
+        }
+
+        .info-value {
+            color: #ce9178;
+            font-weight: 600;
+        }
+
+        .code-header {
+            color: #cccccc;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .code-header::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #007acc;
+            border-radius: 2px;
+        }
+
+        pre {
+            background: #1e1e1e;
+            border-radius: 5px;
+            padding: 15px;
+            color: #d4d4d4;
+            font-size: 12px;
+            line-height: 1.6;
+            overflow-x: auto;
+            border: 1px solid #3e3e42;
+        }
+
+        .keyword { color: #569cd6; }
+        .string { color: #ce9178; }
+        .number { color: #b5cea8; }
+        .function { color: #dcdcaa; }
+        .comment { color: #6a9955; }
+
+        .controls-info {
+            background: #1e1e1e;
+            border-left: 3px solid #007acc;
+            padding: 12px;
+            border-radius: 3px;
+            color: #cccccc;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .controls-info strong {
+            color: #ce9178;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .code-section {
+                max-height: 40vh;
+            }
+        }
+
+        .title {
+            color: #007acc;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+            grid-column: 1 / -1;
+            text-shadow: 0 0 10px rgba(0, 122, 204, 0.3);
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3e3e42;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555555;
+        }
+
+        .menu-screen, .gameover-screen, .paused-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .menu-screen.hidden, .gameover-screen.hidden, .paused-screen.hidden {
+            display: none;
+        }
+
+        .screen-content {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 50px 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .screen-content h2 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .screen-content .score {
+            font-size: 2em;
+            color: #FFD700;
+            margin: 20px 0;
+        }
+
+        .screen-content .best {
+            font-size: 1.2em;
+            color: #666;
+            margin: 10px 0 30px 0;
+        }
+
+        .screen-content p {
+            font-size: 1.2em;
+            color: #555;
+            margin: 15px 0;
+        }
+
+        .screen-content .instruction {
+            font-size: 1em;
+            color: #999;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- SOL TARAF - KOD -->
+        <div class="code-section">
+            <div class="code-header">📝 Oyun Kodu</div>
+            <pre><span class="comment">// Flappy Bird - Web Oyunu</span>
+<span class="keyword">const</span> <span class="function">GameConfig</span> = {
+  <span class="string">WIDTH</span>: <span class="number">400</span>,
+  <span class="string">HEIGHT</span>: <span class="number">600</span>,
+  <span class="string">GRAVITY</span>: <span class="number">0.4</span>,
+  <span class="string">MAX_DROP_SPEED</span>: <span class="number">12</span>,
+  <span class="string">JUMP_POWER</span>: -<span class="number">9</span>,
+  <span class="string">PIPE_WIDTH</span>: <span class="number">60</span>,
+  <span class="string">GAP_SIZE</span>: <span class="number">120</span>
+};
+
+<span class="keyword">class</span> <span class="function">Bird</span> {
+  <span class="keyword">constructor</span>(x, y) {
+    <span class="keyword">this</span>.x = x;
+    <span class="keyword">this</span>.y = y;
+    <span class="keyword">this</span>.velocity = <span class="number">0</span>;
+  }
+
+  <span class="function">jump</span>() {
+    <span class="keyword">this</span>.velocity = 
+      GameConfig.JUMP_POWER;
+  }
+
+  <span class="function">update</span>() {
+    <span class="keyword">this</span>.velocity += 
+      GameConfig.GRAVITY;
+    <span class="keyword">this</span>.y += <span class="keyword">this</span>.velocity;
+  }
+}
+
+<span class="keyword">class</span> <span class="function">Pipe</span> {
+  <span class="keyword">constructor</span>(x, height) {
+    <span class="keyword">this</span>.x = x;
+    <span class="keyword">this</span>.pipeHeight = height;
+    <span class="keyword">this</span>.width = <span class="number">60</span>;
+  }
+
+  <span class="function">checkCollision</span>(bird) {
+    <span class="keyword">return</span> bird.x + 
+      <span class="number">24</span> > <span class="keyword">this</span>.x &&
+      (bird.y < <span class="keyword">this</span>.pipeHeight ||
+       bird.y > <span class="keyword">this</span>.pipeHeight + 
+       <span class="number">120</span>);
+  }
+}
+
+<span class="comment">// Oyun başlat</span>
+<span class="keyword">const</span> game = 
+  <span class="keyword">new</span> <span class="function">FlappyBirdGame</span>();</pre>
+        </div>
+
+        <!-- SAĞ TARAF - ÖNIZLEME -->
+        <div class="preview-section">
+            <div class="preview-header">🎮 Oyun Önizlemesi</div>
+            <div class="preview-container">
+                <canvas id="gameCanvas" width="400" height="600"></canvas>
+            </div>
+
+            <div class="info-panel">
+                <div class="info-row">
+                    <span class="info-label">Puan:</span>
+                    <span class="info-value" id="score">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">En Yüksek:</span>
+                    <span class="info-value" id="bestScore">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">FPS:</span>
+                    <span class="info-value" id="fps">60</span>
+                </div>
+            </div>
+
+            <div class="controls-info">
+                <strong>⌨️ Kontroller:</strong><br>
+                <strong>SPACE</strong> veya <strong>TIKLAMA</strong> - Zıpla<br>
+                <strong>P</strong> - Duraklat/Devam<br><br>
+                <strong>✨ Özellikler:</strong><br>
+                • Akıcı fizik sistemi<br>
+                • Parçacık efektleri<br>
+                • En yüksek skor kaydı<br>
+                • Responsive tasarım
+            </div>
+        </div>
+    </div>
+
+    <!-- Menü Ekranı -->
+    <div class="menu-screen" id="menuScreen">
+        <div class="screen-content">
+            <h2>🐦 FLAPPY BIRD</h2>
+            <p id="menuBest" class="best"></p>
+            <p style="color: #999; font-size: 1em;">Engelleri atla ve yüksek puan kazanmaya çalış!</p>
+            <p class="instruction">Başlamak için tıkla veya SPACE tuşuna bas</p>
+        </div>
+    </div>
+
+    <!-- Oyun Bitti Ekranı -->
+    <div class="gameover-screen hidden" id="gameoverScreen">
+        <div class="screen-content">
+            <h2>OYUN BİTTİ</h2>
+            <div class="score" id="finalScore">Puan: 0</div>
+            <div class="best" id="finalBest">En Yüksek: 0</div>
+            <p class="instruction">Tekrar denemek için tıkla veya SPACE tuşuna bas</p>
+        </div>
+    </div>
+
+    <!-- Duraklat Ekranı -->
+    <div class="paused-screen hidden" id="pausedScreen">
+        <div class="screen-content">
+            <h2>DURAKLANDI</h2>
+            <p class="instruction">Devam etmek için P tuşuna bas</p>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+    <script>
+        // FPS gösterimi
+        let lastTime = Date.now();
+        let frameCount = 0;
+        setInterval(() => {
+            document.getElementById('fps').textContent = frameCount;
+            frameCount = 0;
+        }, 1000);
+
+        const originalGameLoop = window.requestAnimationFrame || (cb => setTimeout(cb, 16));
+        let rafId = 0;
+
+        function countFrame() {
+            frameCount++;
+            rafId = originalGameLoop(countFrame);
+        }
+        countFrame();
+    </script>
+</body>
+</html>
