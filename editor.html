@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐦 Flappy Bird - AI Studio Editörü</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            background: #1e1e1e;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            gap: 0;
+        }
+
+        .code-section {
+            flex: 1;
+            background: #252526;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 2px solid #3e3e42;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .code-section.collapsed {
+            flex: 0;
+            min-width: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .preview-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #252526;
+            padding: 20px;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .preview-section.expanded {
+            flex: 1;
+        }
+
+        .toggle-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #007acc;
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0, 122, 204, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn:hover {
+            background: #0059a8;
+            box-shadow: 0 6px 20px rgba(0, 122, 204, 0.6);
+            transform: scale(1.1);
+        }
+
+        .code-header {
+            color: #cccccc;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .code-header::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #007acc;
+            border-radius: 2px;
+        }
+
+        .code-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        pre {
+            background: #1e1e1e;
+            border-radius: 5px;
+            padding: 15px;
+            color: #d4d4d4;
+            font-size: 12px;
+            line-height: 1.6;
+            border: 1px solid #3e3e42;
+            margin: 0;
+        }
+
+        .keyword { color: #569cd6; }
+        .string { color: #ce9178; }
+        .number { color: #b5cea8; }
+        .function { color: #dcdcaa; }
+        .comment { color: #6a9955; }
+
+        .preview-header {
+            color: #cccccc;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .preview-header::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #007acc;
+            border-radius: 2px;
+        }
+
+        .preview-container {
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+            border: 1px solid #3e3e42;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #gameCanvas {
+            border: 3px solid #007acc;
+            border-radius: 5px;
+            background: linear-gradient(to bottom, #87ceeb 0%, #87ceeb 70%, #90EE90 70%, #90EE90 100%);
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 122, 204, 0.5);
+            max-width: 100%;
+            height: auto;
+        }
+
+        .info-panel {
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid #3e3e42;
+            color: #cccccc;
+            font-size: 13px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .info-row {
+            display: flex;
+            flex-direction: column;
+            background: #252526;
+            padding: 8px 12px;
+            border-radius: 5px;
+            border-left: 3px solid #007acc;
+        }
+
+        .info-label {
+            color: #969696;
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            color: #ce9178;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .controls-info {
+            background: #1e1e1e;
+            border-left: 3px solid #007acc;
+            padding: 12px;
+            border-radius: 3px;
+            color: #cccccc;
+            font-size: 12px;
+            line-height: 1.6;
+            flex-shrink: 0;
+        }
+
+        .controls-info strong {
+            color: #ce9178;
+        }
+
+        .menu-screen, .gameover-screen, .paused-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .menu-screen.hidden, .gameover-screen.hidden, .paused-screen.hidden {
+            display: none;
+        }
+
+        .screen-content {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 50px 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .screen-content h2 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .screen-content .score {
+            font-size: 2em;
+            color: #FFD700;
+            margin: 20px 0;
+        }
+
+        .screen-content .best {
+            font-size: 1.2em;
+            color: #666;
+            margin: 10px 0 30px 0;
+        }
+
+        .screen-content p {
+            font-size: 1.2em;
+            color: #555;
+            margin: 15px 0;
+        }
+
+        .screen-content .instruction {
+            font-size: 1em;
+            color: #999;
+            margin-top: 20px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3e3e42;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555555;
+        }
+
+        @media (max-width: 1024px) {
+            .code-section {
+                display: none;
+            }
+
+            .code-section.visible {
+                display: flex;
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 99;
+                border-right: none;
+            }
+
+            .toggle-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- SOL TARAF - KOD -->
+        <div class="code-section" id="codeSection">
+            <div class="code-header">📝 Oyun Kodu</div>
+            <div class="code-content">
+                <pre><span class="comment">// 🐦 Flappy Bird - Web Oyunu</span>
+<span class="comment">// Geliştirilmiş sürüm - AI Studio Editörü</span>
+
+<span class="keyword">const</span> <span class="function">GameConfig</span> = {
+  <span class="string">WIDTH</span>: <span class="number">400</span>,
+  <span class="string">HEIGHT</span>: <span class="number">600</span>,
+  <span class="string">GRAVITY</span>: <span class="number">0.4</span>,
+  <span class="string">MAX_DROP_SPEED</span>: <span class="number">12</span>,
+  <span class="string">JUMP_POWER</span>: -<span class="number">9</span>,
+  <span class="string">PIPE_WIDTH</span>: <span class="number">60</span>,
+  <span class="string">GAP_SIZE</span>: <span class="number">120</span>,
+  <span class="string">PIPE_SPEED</span>: <span class="number">5</span>
+};
+
+<span class="keyword">class</span> <span class="function">Bird</span> {
+  <span class="keyword">constructor</span>(x, y) {
+    <span class="keyword">this</span>.x = x;
+    <span class="keyword">this</span>.y = y;
+    <span class="keyword">this</span>.velocity = <span class="number">0</span>;
+    <span class="keyword">this</span>.wingAnimation = <span class="number">0</span>;
+  }
+
+  <span class="function">update</span>() {
+    <span class="keyword">this</span>.velocity += 
+      GameConfig.GRAVITY;
+    <span class="keyword">this</span>.y += <span class="keyword">this</span>.velocity;
+  }
+
+  <span class="function">jump</span>() {
+    <span class="keyword">this</span>.velocity = 
+      GameConfig.JUMP_POWER;
+  }
+
+  <span class="function">draw</span>(ctx) {
+    <span class="comment">// Kuş çizimi</span>
+    ctx.fillStyle = <span class="string">'#FFFF00'</span>;
+    ctx.beginPath();
+    ctx.arc(<span class="keyword">this</span>.x + <span class="number">20</span>, 
+            <span class="keyword">this</span>.y + <span class="number">20</span>, 
+            <span class="number">15</span>, <span class="number">0</span>, 
+            Math.PI * <span class="number">2</span>);
+    ctx.fill();
+  }
+}
+
+<span class="keyword">class</span> <span class="function">Pipe</span> {
+  <span class="keyword">constructor</span>(x, height) {
+    <span class="keyword">this</span>.x = x;
+    <span class="keyword">this</span>.pipeHeight = height;
+  }
+
+  <span class="function">checkCollision</span>(bird) {
+    <span class="keyword">return</span> bird.x + 
+      <span class="number">24</span> > <span class="keyword">this</span>.x;
+  }
+}
+
+<span class="comment">// Oyun başlat</span>
+<span class="keyword">window</span>.addEventListener(
+  <span class="string">'load'</span>, 
+  () => {
+    <span class="keyword">new</span> <span class="function">FlappyBirdGame</span>();
+  }
+);</pre>
+            </div>
+        </div>
+
+        <!-- SAĞ TARAF - ÖNIZLEME -->
+        <div class="preview-section">
+            <div class="preview-header">🎮 Oyun Önizlemesi</div>
+            <div class="preview-container">
+                <canvas id="gameCanvas" width="400" height="600"></canvas>
+            </div>
+
+            <div class="info-panel">
+                <div class="info-row">
+                    <span class="info-label">PUAN</span>
+                    <span class="info-value" id="score">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">EN YÜKSEK</span>
+                    <span class="info-value" id="bestScore">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">FPS</span>
+                    <span class="info-value" id="fps">60</span>
+                </div>
+            </div>
+
+            <div class="controls-info">
+                <strong>⌨️ KONTROLLER:</strong><br>
+                <strong>SPACE</strong> veya <strong>TIKLAMA</strong> = Zıpla<br>
+                <strong>P</strong> = Duraklat<br><br>
+                <strong>✨ ÖZELLİKLER:</strong><br>
+                • Akıcı fizik sistemi<br>
+                • Parçacık efektleri<br>
+                • En yüksek skor kaydı<br>
+                • Responsive tasarım
+            </div>
+        </div>
+    </div>
+
+    <!-- Kodları Göz/Gizle Butonu -->
+    <button class="toggle-btn" id="toggleBtn" title="Kodu Gizle/Göster">👁️</button>
+
+    <!-- Menü Ekranı -->
+    <div class="menu-screen" id="menuScreen">
+        <div class="screen-content">
+            <h2>🐦 FLAPPY BIRD</h2>
+            <p id="menuBest" class="best"></p>
+            <p style="color: #999; font-size: 1em;">Engelleri atla ve yüksek puan kazanmaya çalış!</p>
+            <p class="instruction">Başlamak için tıkla veya SPACE tuşuna bas</p>
+        </div>
+    </div>
+
+    <!-- Oyun Bitti Ekranı -->
+    <div class="gameover-screen hidden" id="gameoverScreen">
+        <div class="screen-content">
+            <h2>OYUN BİTTİ</h2>
+            <div class="score" id="finalScore">Puan: 0</div>
+            <div class="best" id="finalBest">En Yüksek: 0</div>
+            <p class="instruction">Tekrar denemek için tıkla veya SPACE tuşuna bas</p>
+        </div>
+    </div>
+
+    <!-- Duraklat Ekranı -->
+    <div class="paused-screen hidden" id="pausedScreen">
+        <div class="screen-content">
+            <h2>⏸️ DURAKLANDI</h2>
+            <p class="instruction">Devam etmek için P tuşuna bas</p>
+        </div>
+    </div>
+
+    <script>
+        // ==================== OYUN AYARLARI ====================
+        const GameConfig = {
+            WIDTH: 400,
+            HEIGHT: 600,
+            FPS: 60,
+            GRAVITY: 0.4,
+            MAX_DROP_SPEED: 12,
+            JUMP_POWER: -9,
+            PIPE_WIDTH: 60,
+            GAP_SIZE: 120,
+            PIPE_SPEED: 5,
+            PIPE_SPAWN_RATE: 90,
+            COLORS: {
+                SKY_BLUE: '#87CEEB',
+                DARK_BLUE: '#1E90FF',
+                PIPE_DARK: '#228B22',
+                PIPE_LIGHT: '#90EE90',
+                BIRD_YELLOW: '#FFFF00',
+                BIRD_ORANGE: '#FFA500',
+                BLACK: '#000000',
+                WHITE: '#FFFFFF',
+                RED: '#FF0000',
+                GOLD: '#FFD700'
+            }
+        };
+
+        const GameState = {
+            MENU: 'menu',
+            PLAYING: 'playing',
+            GAME_OVER: 'gameover',
+            PAUSED: 'paused'
+        };
+
+        // ==================== KUŞU ÇIZME ====================
+        class BirdGraphics {
+            static drawBird(ctx, x, y, wingPosition) {
+                const size = 40;
+                const centerX = x + size / 2;
+                const centerY = y + size / 2;
+
+                ctx.fillStyle = GameConfig.COLORS.BIRD_YELLOW;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, 15, 0, Math.PI * 2);
+                ctx.fill();
+
+                const wingOffset = 8 * Math.abs(wingPosition);
+                ctx.fillStyle = GameConfig.COLORS.BIRD_ORANGE;
+                
+                ctx.beginPath();
+                ctx.moveTo(centerX - 18, centerY - 5 + wingOffset);
+                ctx.lineTo(centerX - 12, centerY + 8);
+                ctx.lineTo(centerX - 8, centerY - 3 + wingOffset);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(centerX + 18, centerY - 5 + wingOffset);
+                ctx.lineTo(centerX + 12, centerY + 8);
+                ctx.lineTo(centerX + 8, centerY - 3 + wingOffset);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = GameConfig.COLORS.BLACK;
+                ctx.beginPath();
+                ctx.arc(centerX + 8, centerY - 4, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = GameConfig.COLORS.WHITE;
+                ctx.beginPath();
+                ctx.arc(centerX + 9, centerY - 5, 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = GameConfig.COLORS.RED;
+                ctx.beginPath();
+                ctx.moveTo(centerX + 15, centerY);
+                ctx.lineTo(centerX + 22, centerY - 2);
+                ctx.lineTo(centerX + 15, centerY + 4);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // ==================== KUŞU SINIFI ====================
+        class Bird {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.velocity = 0;
+                this.width = 40;
+                this.height = 40;
+                this.wingAnimation = 0;
+                this.wingSpeed = 0.2;
+            }
+
+            update() {
+                this.velocity += GameConfig.GRAVITY;
+                this.velocity = Math.min(this.velocity, GameConfig.MAX_DROP_SPEED);
+                this.y += this.velocity;
+
+                this.wingAnimation += this.wingSpeed;
+                if (this.wingAnimation > 1) {
+                    this.wingAnimation = -1;
+                }
+            }
+
+            jump() {
+                this.velocity = GameConfig.JUMP_POWER;
+            }
+
+            draw(ctx) {
+                BirdGraphics.drawBird(ctx, this.x, this.y, this.wingAnimation);
+            }
+
+            getCollisionBox() {
+                return {
+                    x: this.x + 8,
+                    y: this.y + 8,
+                    width: 24,
+                    height: 24
+                };
+            }
+        }
+
+        // ==================== BORU SINIFI ====================
+        class Pipe {
+            constructor(x, pipeHeight) {
+                this.x = x;
+                this.pipeHeight = pipeHeight;
+                this.gapSize = GameConfig.GAP_SIZE;
+                this.width = GameConfig.PIPE_WIDTH;
+                this.speed = GameConfig.PIPE_SPEED;
+                this.passed = false;
+                this.scoreValue = 1;
+            }
+
+            update() {
+                this.x -= this.speed;
+            }
+
+            draw(ctx) {
+                ctx.fillStyle = GameConfig.COLORS.PIPE_DARK;
+                ctx.fillRect(this.x, 0, this.width, this.pipeHeight);
+                
+                ctx.fillStyle = GameConfig.COLORS.PIPE_LIGHT;
+                ctx.fillRect(this.x, this.pipeHeight - 12, this.width, 12);
+
+                const bottomY = this.pipeHeight + this.gapSize;
+                ctx.fillStyle = GameConfig.COLORS.PIPE_DARK;
+                ctx.fillRect(this.x, bottomY, this.width, GameConfig.HEIGHT - bottomY);
+                
+                ctx.fillStyle = GameConfig.COLORS.PIPE_LIGHT;
+                ctx.fillRect(this.x, bottomY, this.width, 12);
+            }
+
+            checkCollision(bird) {
+                const birdBox = bird.getCollisionBox();
+
+                if (birdBox.x + birdBox.width > this.x && birdBox.x < this.x + this.width) {
+                    if (birdBox.y < this.pipeHeight || 
+                        birdBox.y + birdBox.height > this.pipeHeight + this.gapSize) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            isOffScreen() {
+                return this.x + this.width < 0;
+            }
+        }
+
+        // ==================== PARÇACIK SİSTEMİ ====================
+        class Particle {
+            constructor(x, y, vx, vy, color, life) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.color = color;
+                this.life = life;
+                this.maxLife = life;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.2;
+                this.life--;
+            }
+
+            draw(ctx) {
+                const alpha = this.life / this.maxLife;
+                const size = Math.max(2, 4 * alpha);
+                
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+
+            isAlive() {
+                return this.life > 0;
+            }
+        }
+
+        // ==================== ANA OYUN SINIFI ====================
+        class FlappyBirdGame {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.width = GameConfig.WIDTH;
+                this.height = GameConfig.HEIGHT;
+
+                this.reset();
+                this.setupEventListeners();
+                this.loadBestScore();
+                
+                setInterval(() => this.gameLoop(), 1000 / GameConfig.FPS);
+            }
+
+            reset() {
+                this.state = GameState.MENU;
+                this.bird = new Bird(50, this.height / 2);
+                this.pipes = [];
+                this.particles = [];
+                this.score = 0;
+                this.bestScore = localStorage.getItem('flappyBirdBestScore') || 0;
+                this.pipeCounter = 0;
+                this.frameCount = 0;
+            }
+
+            setupEventListeners() {
+                document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+                this.canvas.addEventListener('click', () => this.handleClick());
+                this.canvas.addEventListener('touchstart', () => this.handleClick());
+            }
+
+            handleKeyPress(e) {
+                if (e.key === ' ') {
+                    e.preventDefault();
+                    this.handleClick();
+                }
+
+                if (e.key.toLowerCase() === 'p') {
+                    if (this.state === GameState.PLAYING) {
+                        this.state = GameState.PAUSED;
+                        document.getElementById('pausedScreen').classList.remove('hidden');
+                    } else if (this.state === GameState.PAUSED) {
+                        this.state = GameState.PLAYING;
+                        document.getElementById('pausedScreen').classList.add('hidden');
+                    }
+                }
+            }
+
+            handleClick() {
+                if (this.state === GameState.MENU) {
+                    this.startGame();
+                } else if (this.state === GameState.PLAYING) {
+                    this.bird.jump();
+                    this.createParticles(this.bird.x + 20, this.bird.y + 20, 
+                                       GameConfig.COLORS.BIRD_YELLOW, 3);
+                } else if (this.state === GameState.GAME_OVER) {
+                    this.startGame();
+                }
+            }
+
+            startGame() {
+                this.reset();
+                this.state = GameState.PLAYING;
+                document.getElementById('menuScreen').classList.add('hidden');
+                document.getElementById('gameoverScreen').classList.add('hidden');
+            }
+
+            spawnPipe() {
+                const minHeight = 50;
+                const maxHeight = this.height - GameConfig.GAP_SIZE - 50;
+                const pipeHeight = Math.random() * (maxHeight - minHeight) + minHeight;
+                this.pipes.push(new Pipe(this.width, pipeHeight));
+            }
+
+            createParticles(x, y, color, count = 5) {
+                for (let i = 0; i < count; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 3 + 2;
+                    const vx = speed * Math.cos(angle);
+                    const vy = speed * Math.sin(angle) - 3;
+                    const life = Math.random() * 15 + 15;
+                    
+                    this.particles.push(new Particle(x, y, vx, vy, color, life));
+                }
+            }
+
+            update() {
+                if (this.state !== GameState.PLAYING) return;
+
+                this.bird.update();
+
+                for (let i = this.pipes.length - 1; i >= 0; i--) {
+                    const pipe = this.pipes[i];
+                    pipe.update();
+
+                    if (pipe.checkCollision(this.bird)) {
+                        this.state = GameState.GAME_OVER;
+                        this.updateBestScore();
+                        this.createParticles(this.bird.x + 20, this.bird.y + 20, 
+                                           GameConfig.COLORS.RED, 10);
+                        this.showGameOver();
+                    }
+
+                    if (!pipe.passed && pipe.x + pipe.width < this.bird.x) {
+                        pipe.passed = true;
+                        this.score += pipe.scoreValue;
+                        this.createParticles(this.width / 2, 50, GameConfig.COLORS.GOLD, 5);
+                        document.getElementById('score').textContent = this.score;
+                    }
+
+                    if (pipe.isOffScreen()) {
+                        this.pipes.splice(i, 1);
+                    }
+                }
+
+                this.pipeCounter++;
+                if (this.pipeCounter >= GameConfig.PIPE_SPAWN_RATE) {
+                    this.spawnPipe();
+                    this.pipeCounter = 0;
+                }
+
+                if (this.bird.y <= 0 || this.bird.y + this.bird.height >= this.height) {
+                    this.state = GameState.GAME_OVER;
+                    this.updateBestScore();
+                    this.showGameOver();
+                }
+
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    this.particles[i].update();
+                    if (!this.particles[i].isAlive()) {
+                        this.particles.splice(i, 1);
+                    }
+                }
+            }
+
+            draw() {
+                const gradient = this.ctx.createLinearGradient(0, 0, 0, this.height);
+                gradient.addColorStop(0, '#87CEEB');
+                gradient.addColorStop(0.7, '#87CEEB');
+                gradient.addColorStop(1, '#90EE90');
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(0, 0, this.width, this.height);
+
+                for (const pipe of this.pipes) {
+                    pipe.draw(this.ctx);
+                }
+
+                this.bird.draw(this.ctx);
+
+                for (const particle of this.particles) {
+                    particle.draw(this.ctx);
+                }
+
+                this.ctx.fillStyle = GameConfig.COLORS.WHITE;
+                this.ctx.font = 'bold 48px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                this.ctx.shadowBlur = 4;
+                this.ctx.fillText(this.score, this.width / 2, 60);
+                this.ctx.shadowColor = 'transparent';
+            }
+
+            updateBestScore() {
+                if (this.score > this.bestScore) {
+                    this.bestScore = this.score;
+                    localStorage.setItem('flappyBirdBestScore', this.bestScore);
+                    document.getElementById('bestScore').textContent = 
+                        `${this.bestScore}`;
+                }
+            }
+
+            loadBestScore() {
+                document.getElementById('bestScore').textContent = `${this.bestScore}`;
+                
+                const menuBest = document.getElementById('menuBest');
+                if (this.bestScore > 0) {
+                    menuBest.textContent = `En Yüksek Skor: ${this.bestScore}`;
+                }
+            }
+
+            showGameOver() {
+                document.getElementById('finalScore').textContent = `Puan: ${this.score}`;
+                document.getElementById('finalBest').textContent = `En Yüksek: ${this.bestScore}`;
+                document.getElementById('gameoverScreen').classList.remove('hidden');
+            }
+
+            gameLoop() {
+                this.update();
+                this.draw();
+            }
+        }
+
+        // ==================== OYUNU BAŞLAT ====================
+        window.addEventListener('load', () => {
+            new FlappyBirdGame();
+        });
+
+        // ==================== KOD GÖZ İKONU ====================
+        const toggleBtn = document.getElementById('toggleBtn');
+        const codeSection = document.getElementById('codeSection');
+
+        toggleBtn.addEventListener('click', () => {
+            codeSection.classList.toggle('collapsed');
+            codeSection.classList.toggle('visible');
+            
+            if (codeSection.classList.contains('collapsed')) {
+                toggleBtn.textContent = '👁️‍🗨️';
+                toggleBtn.title = 'Kodu Göster';
+            } else {
+                toggleBtn.textContent = '👁️';
+                toggleBtn.title = 'Kodu Gizle';
+            }
+        });
+
+        // FPS gösterimi
+        let frameCount = 0;
+        setInterval(() => {
+            document.getElementById('fps').textContent = frameCount;
+            frameCount = 0;
+        }, 1000);
+
+        let lastFrameTime = 0;
+        function updateFPS() {
+            frameCount++;
+            requestAnimationFrame(updateFPS);
+        }
+        updateFPS();
+    </script>
+</body>
+</html>
