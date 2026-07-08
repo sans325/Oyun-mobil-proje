@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐦 Flappy Bird - Geliştirilmiş Sürüm</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #007acc;
+            --secondary: #1e1e1e;
+            --accent: #ce9178;
+            --text: #cccccc;
+            --success: #4ec9b0;
+            --warning: #ce9178;
+            --danger: #f48771;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
+            color: var(--text);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        body.light-theme {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            --secondary: #ffffff;
+            --text: #333333;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            gap: 0;
+        }
+
+        .game-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(30,30,30,0.8), rgba(45,45,45,0.8));
+            position: relative;
+            overflow: hidden;
+        }
+
+        body.light-theme .game-section {
+            background: linear-gradient(135deg, rgba(245,245,245,0.9), rgba(232,232,232,0.9));
+        }
+
+        .sidebar {
+            width: 320px;
+            background: var(--secondary);
+            border-left: 2px solid var(--primary);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 122, 204, 0.3);
+        }
+
+        .stats-panel {
+            background: rgba(0, 122, 204, 0.1);
+            border: 1px solid var(--primary);
+            border-radius: 10px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            border-left: 3px solid var(--accent);
+        }
+
+        .stat-label {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .stat-value {
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .settings-panel {
+            background: rgba(0, 122, 204, 0.1);
+            border: 1px solid var(--primary);
+            border-radius: 10px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .settings-title {
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .setting-item {
+            margin: 12px 0;
+        }
+
+        .setting-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .switch {
+            width: 40px;
+            height: 24px;
+            background: #3e3e42;
+            border-radius: 12px;
+            position: relative;
+            transition: all 0.3s ease;
+            border: 1px solid #555;
+        }
+
+        .switch.active {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .switch::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .switch.active::after {
+            left: 18px;
+        }
+
+        .difficulty-select {
+            width: 100%;
+            padding: 8px;
+            background: #1e1e1e;
+            color: var(--text);
+            border: 1px solid var(--primary);
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        body.light-theme .difficulty-select {
+            background: #f5f5f5;
+            color: #333;
+            border-color: var(--primary);
+        }
+
+        .top-scores {
+            background: rgba(0, 122, 204, 0.1);
+            border: 1px solid var(--primary);
+            border-radius: 10px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            border-left: 3px solid var(--success);
+            font-size: 12px;
+        }
+
+        .score-rank {
+            color: var(--accent);
+            font-weight: 600;
+            min-width: 20px;
+        }
+
+        .score-value {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        #gameCanvas {
+            border: 4px solid var(--primary);
+            border-radius: 15px;
+            box-shadow: 0 0 40px rgba(0, 122, 204, 0.5);
+            background: linear-gradient(to bottom, #87ceeb 0%, #87ceeb 70%, #2d5016 70%);
+            max-width: 100%;
+            height: auto;
+            cursor: pointer;
+            transition: box-shadow 0.3s ease;
+        }
+
+        #gameCanvas:hover {
+            box-shadow: 0 0 60px rgba(0, 122, 204, 0.8);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--primary);
+            background: rgba(0, 122, 204, 0.1);
+            color: var(--primary);
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 0 15px rgba(0, 122, 204, 0.5);
+        }
+
+        .btn.danger {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .btn.danger:hover {
+            background: var(--danger);
+            color: white;
+            box-shadow: 0 0 15px rgba(244, 135, 113, 0.5);
+        }
+
+        /* Ekranlar */
+        .screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(8px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .screen-content {
+            background: linear-gradient(135deg, rgba(30, 30, 30, 0.95), rgba(45, 45, 45, 0.95));
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            padding: 50px 40px;
+            text-align: center;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.7);
+            max-width: 500px;
+            animation: slideIn 0.4s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .screen-title {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: var(--primary);
+            text-shadow: 0 0 20px rgba(0, 122, 204, 0.5);
+        }
+
+        .screen-score {
+            font-size: 2.5em;
+            color: var(--success);
+            margin: 20px 0;
+            font-weight: 700;
+        }
+
+        .screen-subtitle {
+            font-size: 1.2em;
+            color: #999;
+            margin: 15px 0;
+        }
+
+        .screen-instruction {
+            font-size: 1em;
+            color: #666;
+            margin-top: 25px;
+        }
+
+        .stars {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            font-size: 2em;
+        }
+
+        .star {
+            opacity: 0.3;
+            transition: all 0.3s ease;
+        }
+
+        .star.filled {
+            opacity: 1;
+            color: var(--accent);
+            animation: starPop 0.3s ease;
+        }
+
+        @keyframes starPop {
+            0% {
+                transform: scale(0);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0059a8;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                border-left: none;
+                border-top: 2px solid var(--primary);
+                padding: 15px;
+                max-height: 200px;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 15px;
+            }
+
+            .stats-panel, .settings-panel, .top-scores {
+                grid-column: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                max-height: 150px;
+            }
+
+            .screen-content {
+                padding: 30px 20px;
+            }
+
+            .screen-title {
+                font-size: 2em;
+            }
+
+            .screen-score {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- OYUN BÖLÜMÜ -->
+        <div class="game-section">
+            <canvas id="gameCanvas" width="400" height="600"></canvas>
+        </div>
+
+        <!-- KENAR ÇUBUGU -->
+        <div class="sidebar">
+            <div class="logo">🐦 FLAPPY BIRD</div>
+
+            <!-- İSTATİSTİKLER -->
+            <div class="stats-panel">
+                <div class="settings-title">📊 İstatistikler</div>
+                <div class="stat-row">
+                    <span class="stat-label">Puan</span>
+                    <span class="stat-value" id="currentScore">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">En Yüksek</span>
+                    <span class="stat-value" id="bestScore">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Oynanan</span>
+                    <span class="stat-value" id="gamesPlayed">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Kat. Başladı</span>
+                    <span class="stat-value" id="totalScore">0</span>
+                </div>
+            </div>
+
+            <!-- AYARLAR -->
+            <div class="settings-panel">
+                <div class="settings-title">⚙️ Ayarlar</div>
+                
+                <div class="setting-item">
+                    <label class="setting-label">Zorluk Seviyesi</label>
+                    <select id="difficulty" class="difficulty-select">
+                        <option value="easy">🟢 Kolay</option>
+                        <option value="normal" selected>🟡 Normal</option>
+                        <option value="hard">🔴 Zor</option>
+                    </select>
+                </div>
+
+                <div class="setting-item">
+                    <label class="toggle-switch">
+                        <span class="setting-label" style="margin: 0;">🔊 Ses</span>
+                        <div class="switch active" id="soundToggle"></div>
+                    </label>
+                </div>
+
+                <div class="setting-item">
+                    <label class="toggle-switch">
+                        <span class="setting-label" style="margin: 0;">🌙 Koyu Mod</span>
+                        <div class="switch active" id="themeToggle"></div>
+                    </label>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn" id="resetBtn">↺ Sıfırla</button>
+                    <button class="btn danger" id="clearBtn">🗑️ Temizle</button>
+                </div>
+            </div>
+
+            <!-- EN İYİ SKORLAR -->
+            <div class="top-scores">
+                <div class="settings-title">🏆 En İyi 5 Skor</div>
+                <div id="topScoresList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MENÜ EKRANI -->
+    <div class="screen" id="menuScreen">
+        <div class="screen-content">
+            <div class="screen-title">🐦 FLAPPY BIRD</div>
+            <div class="screen-subtitle" id="menuBest">Yeni bir maceraya başlamaya hazır mısın?</div>
+            <div class="screen-instruction">Başlamak için tıkla veya SPACE tuşuna bas</div>
+        </div>
+    </div>
+
+    <!-- OYUN BİTTİ EKRANI -->
+    <div class="screen" id="gameoverScreen">
+        <div class="screen-content">
+            <div class="screen-title">OYUN BİTTİ!</div>
+            <div class="stars" id="starsDisplay"></div>
+            <div class="screen-score" id="finalScore">0</div>
+            <div class="screen-subtitle" id="finalBest">En Yüksek: 0</div>
+            <div class="screen-instruction">Tekrar denemek için tıkla veya SPACE tuşuna bas</div>
+        </div>
+    </div>
+
+    <!-- DURAKLAT EKRANI -->
+    <div class="screen" id="pausedScreen">
+        <div class="screen-content">
+            <div class="screen-title">⏸️ DURAKLANDI</div>
+            <div class="screen-subtitle">Devam etmek için P tuşuna bas</div>
+        </div>
+    </div>
+
+    <script src="game-advanced.js"></script>
+</body>
+</html>
